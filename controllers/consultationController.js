@@ -72,7 +72,9 @@ const createPaymentCompletedNotification = async (consultation) => {
 // Using background processing for faster response
 export const initiateConsultationPayment = catchAsync(
   async (req, res, next) => {
-    const { consultationId, amount } = req.body;
+    const { consultationId } = req.body;
+
+    const amount = 99;
     
     if (!consultationId || !amount) {
       return next(new AppError('Please provide consultation ID and amount', 400));
@@ -601,3 +603,5 @@ export const getConsultationStats = catchAsync(async (req, res, next) => {
     }
   });
 });
+
+

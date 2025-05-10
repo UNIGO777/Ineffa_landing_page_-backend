@@ -134,6 +134,8 @@ export const verifyPayment = catchAsync(async (req, res, next) => {
       // Send scheduled WhatsApp messages
       await SendScheduledWhatsappMessages(consultation);
 
+      await SendScheduledEmails(consultation);
+
 
       const crmApi = 'https://www.api.365leadmanagement.com/wpaddwebsiteleads';
       
@@ -302,3 +304,107 @@ const SendScheduledWhatsappMessages = async (details) => {
     console.log(res.status)
   });
 }
+
+
+const SendScheduledEmails = async (details) => {
+    const meetingTime = convertToISTDateTime(details.slotDate, details.slotStartTime);
+    const meetingDateTime = new Date(meetingTime);
+
+    const scheduledMessages = [
+        {
+            timing: new Date(meetingDateTime.getTime() - (24 * 60 * 60 * 1000)), // 24 hours before
+            subject: "24 Hour Reminder: Your Consultation Tomorrow",
+            template: "24hr_reminder"
+        },
+        {
+            timing: new Date(meetingDateTime.getTime() - (30 * 60 * 1000)), // 30 minutes before
+            subject: "30 Minutes Until Your Consultation",
+            template: "30min_reminder"
+        },
+        {
+            timing: new Date(meetingDateTime.getTime() - (10 * 60 * 1000)), // 10 minutes before
+            subject: "10 Minutes Until Your Consultation",
+            template: "10min_reminder"
+        },
+        {
+            timing: meetingDateTime, // At meeting time
+            subject: "Your Consultation is Starting Now",
+            template: "live_now"
+        },
+        {
+            timing: new Date(meetingDateTime.getTime() + (5 * 60 * 1000)), // 5 minutes after
+            subject: "Consultation Follow-up",
+            template: "after_start_reminder"
+        }
+    ];
+
+    // Here you can implement the email scheduling logic using the scheduledMessages array
+    // Each object contains the timing and relevant template information
+    const brevoEmailApi = 'https://api.brevo.com/v3/smtp/email'
+
+    for (const message of scheduledMessages) {
+        try {
+            const payload = {
+                to: [{
+                    email: details.email,
+                    name: details.name
+                }],
+                templateId: 2,
+                params: {
+                    subject: message.subject,
+                    date: message.timing.toISOString().split('T')[0],
+                    time: message.timing.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        hour12: true
+                    }),
+                    service: details.service,
+                    zoomLink: details.meetingLink
+                },
+                scheduledAt: message.timing.toISOString()
+            };
+
+            const response = await fetch(brevoEmailApi, {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': process.env.BREVO_API_KEY,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }else{
+                console.log(response);
+            }
+
+            const data = await response.json();
+            console.log(`Scheduled ${message.template} email successfully:`, data);
+        } catch (error) {
+            console.error(`Failed to schedule ${message.template} email:`, error);
+        }
+    }
+}
+
+
+const convertToISTDateTime = (slotDate, slotStartTime) => {
+  // Parse the date and time
+  const [hours, minutes] = slotStartTime.split(':').map(Number);
+  
+  // Create a new date object from slotDate
+  const date = new Date(slotDate);
+  
+  // Set the hours and minutes
+  date.setHours(hours, minutes, 0, 0);
+  
+  // Add 5 hours and 30 minutes for IST offset
+  date.setHours(date.getHours() + 5);
+  date.setMinutes(date.getMinutes() + 30);
+  
+  // Format to ISO string with IST offset
+  return date.toISOString().replace('Z', '+05:30');
+}
+
+

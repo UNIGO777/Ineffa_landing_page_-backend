@@ -45,10 +45,10 @@ mongoose.connection.once('open', () => {
     console.log('MongoDB connected successfully');
     
     createAdmin({
-        name: 'Naman',
-        email: 'naman13399@gmail.com',
-        password: 'Naman@13399',
-        phoneNumber: '7000610047'
+        name: 'Ineffa',
+        email: 'connect@ineffa.design',
+        password: 'Ewith@2025',
+        phoneNumber: '9174691537'
     }).then(admin => {
         console.log('Admin created:', admin);
         mongoose.connection.close();
