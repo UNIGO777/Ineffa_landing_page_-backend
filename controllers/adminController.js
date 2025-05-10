@@ -101,7 +101,6 @@ export const login = catchAsync(async (req, res, next) => {
   const token = jwt.sign(
     { id: admin._id, name: admin.name, email: admin.email },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
   );
   
   // Remove OTP from store
