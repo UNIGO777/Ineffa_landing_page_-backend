@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import Admin from './models/AdminModel.js';
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://naman13399:naman13399@landacers.jy24n.mongodb.net/?retryWrites=true&w=majority&appName=LandAcers', {
+mongoose.connect('mongodb://127.0.0.1:27017', {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }).catch(err => console.error('MongoDB connection error:', err));
