@@ -46,9 +46,9 @@ mongoose.connection.once('open', () => {
     
     createAdmin({
         name: 'Ineffa',
-        email: 'connect@ineffa.design',
-        password: 'Ewith@2025',
-        phoneNumber: '9174691537'
+        email: 'naman13399@gmail.com',
+        password: 'Naman@13399',
+        phoneNumber: '7000610047'
     }).then(admin => {
         console.log('Admin created:', admin);
         mongoose.connection.close();
