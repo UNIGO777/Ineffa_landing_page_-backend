@@ -126,7 +126,7 @@ export const verifyPayment = catchAsync(async (req, res, next) => {
       });
 
       // Send WhatsApp message
-      const whatsappApiUrl = `http://ow.ewiths.com/wapp/api/v2/send/bytemplate?apikey=e1e61ebd1bd9437191c5cf44cdf973cf&templatename=consultation_confirmation&mobile=${consultation.phone}&dvariables=${consultation.name},${consultation.service.toLowerCase().includes('consultation')? consultation.service : `${consultation.service} consultation`},${consultation.slotDate.toISOString().split('T')[0] + " " + consultation.slotStartTime},${consultation.meetingLink}`;
+      const whatsappApiUrl = `http://ow.ewiths.com/wapp/api/v2/send/bytemplate?apikey=e1e61ebd1bd9437191c5cf44cdf973cf&templatename=consultation_confirmation_&mobile=${consultation.phone}&dvariables=${consultation.name},${consultation.service.toLowerCase().includes('consultation')? consultation.service : `${consultation.service} consultation`},${consultation.slotDate.toISOString().split('T')[0] + " " + consultation.slotStartTime},${consultation.meetingLink}`;
       console.log(whatsappApiUrl);
       const response = await fetch(whatsappApiUrl, { method: 'GET' });
 
