@@ -3,6 +3,8 @@ import Consultation from '../models/Consultation.js';
 import Notification from '../models/Notification.js';
 import { AppError } from '../utils/appError.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import ExcelJS from 'exceljs';
+import { format } from 'date-fns';
 
 // Get all payments with filtering options
 export const getAllPayments = catchAsync(async (req, res, next) => {
@@ -200,4 +202,75 @@ export const getPaymentStats = catchAsync(async (req, res, next) => {
       stats
     }
   });
+});
+
+// Export payments to Excel
+export const exportPaymentsToExcel = catchAsync(async (req, res, next) => {
+  // Extract filter parameters from query
+  const { status = 'completed', startDate, endDate } = req.query;
+  
+  // Build filter object
+  const filter = {};
+  
+  // Filter by status if provided (default to completed)
+  if (status && status !== 'all') {
+    filter.status = status;
+  }
+  
+  // Filter by date range if provided
+  if (startDate && endDate) {
+    const startOfDay = new Date(new Date(startDate).setHours(0, 0, 0, 0));
+    const endOfDay = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+    
+    filter.createdAt = { $gte: startOfDay, $lte: endOfDay };
+  }
+  
+  // Execute query with filters
+  const payments = await Payment.find(filter)
+    .populate('consultationId')
+    .sort({ createdAt: -1 });
+  
+  // Create a new Excel workbook
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Payments');
+  
+  // Add headers
+  worksheet.columns = [
+    { header: 'Payment ID', key: 'id', width: 30 },
+    { header: 'Date', key: 'date', width: 15 },
+    { header: 'Customer', key: 'customer', width: 25 },
+    { header: 'Amount (₹)', key: 'amount', width: 15 },
+    { header: 'Payment Method', key: 'method', width: 20 },
+    { header: 'Status', key: 'status', width: 15 },
+    { header: 'Service', key: 'service', width: 25 }
+  ];
+  
+  // Style the header row
+  worksheet.getRow(1).font = { bold: true };
+  worksheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE0E0E0' }
+  };
+  
+  // Add data rows
+  payments.forEach(payment => {
+    worksheet.addRow({
+      id: payment._id,
+      date: format(new Date(payment.createdAt), 'MMM dd, yyyy'),
+      customer: payment.consultationId?.name || 'N/A',
+      amount: payment.amount,
+      method: payment.paymentMethod,
+      status: payment.status,
+      service: payment.consultationId?.service || 'N/A'
+    });
+  });
+  
+  // Set content type and disposition
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=payments-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  
+  // Write to response
+  await workbook.xlsx.write(res);
+  res.end();
 });

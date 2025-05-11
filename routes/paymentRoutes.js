@@ -5,7 +5,8 @@ import {
   createPayment,
   updatePaymentStatus,
   deletePayment,
-  getPaymentStats
+  getPaymentStats,
+  exportPaymentsToExcel
 } from '../controllers/paymentController.js';
 import adminAuth from '../middleware/Auth.js';
 
@@ -16,6 +17,7 @@ router.use(adminAuth);
 
 router.get('/', getAllPayments);
 router.get('/stats', getPaymentStats);
+router.get('/export', exportPaymentsToExcel);
 router.get('/:id', getPayment);
 router.post('/', createPayment);
 router.patch('/:id', updatePaymentStatus);

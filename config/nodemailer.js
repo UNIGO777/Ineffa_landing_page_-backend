@@ -74,7 +74,7 @@ export const sendConsultationConfirmation = async (email, bookingDetails) => {
         <p>Please make sure to join the consultation at the scheduled time using the Zoom link provided above.</p>
         
         <div style="text-align: center; margin: 25px 0;">
-          <a href="https://calendly.com/ineffa/30min" 
+          <a href="https://calendly.com/ineffadesign/30min" 
              style="background-color: #4CAF50; 
                     color: white; 
                     padding: 12px 25px; 
