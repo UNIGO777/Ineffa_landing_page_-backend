@@ -4,8 +4,29 @@ import { catchAsync } from '../utils/catchAsync.js';
 
 // Get dashboard statistics
 export const getDashboardStats = catchAsync(async (req, res, next) => {
+  // Extract month filter from query params
+  const { month } = req.query;
+  
+  // Create date filter based on month if provided
+  let dateFilter = {};
+  if (month) {
+    const year = new Date().getFullYear();
+    const monthNum = parseInt(month);
+    if (monthNum >= 1 && monthNum <= 12) {
+      const startDate = new Date(year, monthNum - 1, 1); // Month is 0-indexed in JS Date
+      const endDate = new Date(year, monthNum, 0); // Last day of the month
+      dateFilter = {
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate
+        }
+      };
+    }
+  }
+  
   // Get payment statistics
   const paymentStats = await Payment.aggregate([
+    ...(Object.keys(dateFilter).length > 0 ? [{ $match: dateFilter }] : []),
     {
       $group: {
         _id: '$status',
@@ -39,6 +60,7 @@ export const getDashboardStats = catchAsync(async (req, res, next) => {
 
   // Get consultation statistics
   const consultationStats = await Consultation.aggregate([
+    ...(Object.keys(dateFilter).length > 0 ? [{ $match: dateFilter }] : []),
     {
       $group: {
         _id: '$status',
@@ -54,17 +76,26 @@ export const getDashboardStats = catchAsync(async (req, res, next) => {
     }
   ]);
 
-  // Calculate total, completed and upcoming consultations
+  // Calculate total, completed, upcoming, booked and canceled consultations
   let totalConsultations = 0;
   let completedConsultations = 0;
   let upcomingConsultations = 0;
+  let bookedConsultations = 0;
+  let canceledConsultations = 0;
   
   consultationStats.forEach(stat => {
+    // Sum all consultations for the total
     totalConsultations += stat.count;
-    if (stat.status === 'completed') {
+    
+    // Count by specific status
+    if (stat.status === 'booked') {
+      bookedConsultations = stat.count;
+    } else if (stat.status === 'completed') {
       completedConsultations = stat.count;
     } else if (stat.status === 'scheduled') {
       upcomingConsultations = stat.count;
+    } else if (stat.status === 'canceled') {
+      canceledConsultations = stat.count;
     }
   });
 
@@ -108,8 +139,10 @@ export const getDashboardStats = catchAsync(async (req, res, next) => {
       },
       consultationStats: {
         total: totalConsultations,
+        booked: bookedConsultations,
         completed: completedConsultations,
         upcoming: upcomingConsultations,
+        canceled: canceledConsultations,
         growth: consultationGrowth
       },
       todaysAppointments: formattedAppointments,
@@ -120,17 +153,33 @@ export const getDashboardStats = catchAsync(async (req, res, next) => {
 
 // Get monthly analytics data
 export const getMonthlyAnalytics = catchAsync(async (req, res, next) => {
-  const { year = new Date().getFullYear() } = req.query;
+  const { year = new Date().getFullYear(), month } = req.query;
+  
+  // Create date filter based on year and optionally month
+  let dateFilter = {
+    createdAt: {
+      $gte: new Date(`${year}-01-01`),
+      $lte: new Date(`${year}-12-31`)
+    }
+  };
+  
+  // If month is provided, refine the date filter
+  if (month) {
+    const monthNum = parseInt(month);
+    if (monthNum >= 1 && monthNum <= 12) {
+      const startDate = new Date(year, monthNum - 1, 1); // Month is 0-indexed in JS Date
+      const endDate = new Date(year, monthNum, 0); // Last day of the month
+      dateFilter.createdAt = {
+        $gte: startDate,
+        $lte: endDate
+      };
+    }
+  }
   
   // Get monthly payment data
   const monthlyPayments = await Payment.aggregate([
     {
-      $match: {
-        createdAt: {
-          $gte: new Date(`${year}-01-01`),
-          $lte: new Date(`${year}-12-31`)
-        }
-      }
+      $match: dateFilter
     },
     {
       $group: {
@@ -154,10 +203,9 @@ export const getMonthlyAnalytics = catchAsync(async (req, res, next) => {
   const monthlyConsultations = await Consultation.aggregate([
     {
       $match: {
-        createdAt: {
-          $gte: new Date(`${year}-01-01`),
-          $lte: new Date(`${year}-12-31`)
-        }
+        ...dateFilter,
+        // Only include consultations with 'booked' status
+        status: 'booked'
       }
     },
     {
