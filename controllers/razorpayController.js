@@ -126,7 +126,7 @@ export const verifyPayment = catchAsync(async (req, res, next) => {
       });
 
       // Send WhatsApp message
-      const whatsappApiUrl = `http://ow.ewiths.com/wapp/api/v2/send/bytemplate?apikey=e1e61ebd1bd9437191c5cf44cdf973cf&templatename=consultation_confirmation_&mobile=${consultation.phone}&dvariables=${consultation.name},${consultation.service.toLowerCase().includes('consultation')? consultation.service : `${consultation.service} consultation`},${consultation.slotDate.toISOString().split('T')[0] + " " + consultation.slotStartTime},${consultation.meetingLink}`;
+      const whatsappApiUrl = `http://ow.ewiths.com/wapp/api/v2/send/bytemplate?apikey=e1e61ebd1bd9437191c5cf44cdf973cf&templatename=consultation_confirmation__&mobile=${consultation.phone}&dvariables=${consultation.name},${consultation.service.toLowerCase().includes('consultation')? consultation.service : `${consultation.service} consultation`},${consultation.slotDate.toISOString().split('T')[0] + " " + consultation.slotStartTime},${consultation.meetingLink}`;
       console.log(whatsappApiUrl);
       const response = await fetch(whatsappApiUrl, { method: 'GET' });
 
@@ -227,7 +227,7 @@ const SendScheduledWhatsappMessages = async (details) => {
     },
     {
       delayLabel: 'after_start_reminder',
-      url: `consultation_reminder_after_5_min&mobile=${details.phone}&scheduledate=`,
+      url: `consultation_reminder_after_5_min__&mobile=${details.phone}&scheduledate=`,
       dvariables: `${details.name},${details.meetingLink}`
     },
   ];
@@ -359,7 +359,10 @@ const SendScheduledEmails = async (details) => {
                         hour12: true
                     }),
                     service: details.service,
-                    zoomLink: details.meetingLink
+                    zoomLink: details.meetingLink,
+                    reschedule: message.template === 'after_start_reminder' ? 
+                        "If you wish to reschedule, click here: https://calendly.com/ineffadesign/30min" : 
+                        undefined
                 },
                 scheduledAt: message.timing.toISOString()
             };
@@ -376,7 +379,7 @@ const SendScheduledEmails = async (details) => {
 
             if (!response) {
                 throw new Error(`HTTP error! status: ${response.status}`);
-            }else{
+            } else {
                 console.log(response);
             }
 
