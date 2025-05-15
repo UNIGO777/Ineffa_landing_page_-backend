@@ -8,11 +8,16 @@ import crypto from 'crypto';
 import { sendConsultationConfirmation } from '../config/nodemailer.js';
 import getUnixTimestampFromLocal from '../GenerateTimeStamp.js';
 import axios from 'axios';
+import SendScheduledEmails from '../GenrateReminderEmail.js';
+import SendScheduledWhatsappMessages from '../WhatsappMsgReminders.js';
+
 
 
 // Create a Razorpay order
 export const createOrder = catchAsync(async (req, res, next) => {
-  const { consultationId, amount } = req.body;
+  const { consultationId } = req.body;
+
+  const  amount  = 99;
 
   if (!consultationId || !amount) {
     return next(new AppError('Please provide consultation ID and amount', 400));
@@ -126,8 +131,8 @@ export const verifyPayment = catchAsync(async (req, res, next) => {
       });
 
       // Send WhatsApp message
-      const whatsappApiUrl = `http://ow.ewiths.com/wapp/api/v2/send/bytemplate?apikey=e1e61ebd1bd9437191c5cf44cdf973cf&templatename=consultation_confirmation__&mobile=${consultation.phone}&dvariables=${consultation.name},${consultation.service.toLowerCase().includes('consultation')? consultation.service : `${consultation.service} consultation`},${consultation.slotDate.toISOString().split('T')[0] + " " + consultation.slotStartTime},${consultation.meetingLink}`;
-      console.log(whatsappApiUrl);
+      const whatsappApiUrl = `http://ow.ewiths.com/wapp/api/v2/send/bytemplate?apikey=${process.env.Whatsapp_api_key}&templatename=consultation_confirmation_1&mobile=${consultation.phone}&dvariables=${consultation.name},${consultation.service.toLowerCase().includes('consultation')? consultation.service : `${consultation.service} consultation`},${consultation.slotDate.toISOString().split('T')[0] + " " + consultation.slotStartTime},${consultation.meetingLink}`;
+      
       const response = await fetch(whatsappApiUrl, { method: 'GET' });
 
 
@@ -198,216 +203,9 @@ export const getRazorpayKey = catchAsync(async (req, res) => {
 
 
 
-const SendScheduledWhatsappMessages = async (details) => {
-  const baseUrl = `https://wa.iconicsolution.co.in/wapp/api/v2/send/bytemplate?apikey=${process.env.Whatsapp_api_key}&templatename=`
-  
 
 
-  const scheduledMessages = [
-    {
-      delayLabel: '24hr_reminder',
-      url: `consultation_reminders_24_hour_before&mobile=${details.phone}&scheduledate=`,
-      dvariables: `${details.name},${details.service.toLowerCase().includes('consultation') ? details.service : `${details.service} consultation`},${details.slotDate.toISOString().split('T')[0] + "," + details.slotStartTime},${details.meetingLink}`
-    },
-    {
-      delayLabel: '30min_reminder',
-      url: `consultation_reminders_30_min_before&mobile=${details.phone}&scheduledate=`,
-      dvariables: `${details.name},${details.service.toLowerCase().includes('consultation')? details.service : `${details.service} consultation`},${details.meetingLink}`
-    },
-    {
-      delayLabel: '10min_reminder',
-      url: `consultation_reminders_10_min_before&mobile=${details.phone}&scheduledate=`,
-      dvariables: `${details.name},${details.service.toLowerCase().includes('consultation')? details.service : `${details.service} consultation`},${details.meetingLink}`
-    },
-    {
-      delayLabel: 'live_now',
-      url: `consultation_reminders_live&mobile=${details.phone}&scheduledate=`,
-      dvariables: `${details.name},${details.meetingLink}`
-      
-    },
-    {
-      delayLabel: 'after_start_reminder',
-      url: `consultation_reminder_after_5_min__&mobile=${details.phone}&scheduledate=`,
-      dvariables: `${details.name},${details.meetingLink}`
-    },
-  ];
-
-  const reminderTime24hours = new Date(details.slotDate);
-  reminderTime24hours.setDate(reminderTime24hours.getDate() - 1); // Subtract 1 day
-  const formattedDate = reminderTime24hours.toISOString().split('T')[0]; // Get YYYY-MM-DD format
-  const unixTimeStamp = getUnixTimestampFromLocal(formattedDate, details.slotStartTime);
-  const whatsappApiUrl = `${baseUrl}${scheduledMessages[0].url}${unixTimeStamp}&dvariables=${scheduledMessages[0].dvariables}`;
-  await fetch(whatsappApiUrl, { method: 'GET' }).then((res) => {
-    console.log(res.status)
-  });
-
-  // Get hours and minutes from slot time
-  const [hours30, minutes30] = details.slotStartTime.split(':').map(Number);
-  
-  // Calculate time 30 minutes before slot time
-  const totalMinutes30 = hours30 * 60 + minutes30;
-  const newTotalMinutes30 = totalMinutes30 - 30;
-  const newHours30 = Math.floor(newTotalMinutes30 / 60);
-  const newMinutes30 = newTotalMinutes30 % 60;
-  
-  // Format as HH:MM
-  const formattedTime30min = `${newHours30.toString().padStart(2, '0')}:${newMinutes30.toString().padStart(2, '0')}`;
-  
-  const unixTimeStamp30min = getUnixTimestampFromLocal(details.slotDate.toISOString().split('T')[0], formattedTime30min);
-  const whatsappApiUrl30min = `${baseUrl}${scheduledMessages[1].url}${unixTimeStamp30min}&dvariables=${scheduledMessages[1].dvariables}`;
-  await fetch(whatsappApiUrl30min, { method: 'GET' }).then((res) => {
-    console.log(res.status)
-  });
 
 
-  // Get hours and minutes from slot time (e.g. "16:00")
-  const [hours10, minutes10] = details.slotStartTime.split(':').map(Number);
-  
-  // Calculate time 10 minutes before slot time
-  const totalMinutes = hours10 * 60 + minutes10;
-  const newTotalMinutes = totalMinutes - 10;
-  const newHours = Math.floor(newTotalMinutes / 60);
-  const newMinutes = newTotalMinutes % 60;
-  
-  // Format as HH:MM
-  const formattedTime10min = `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
-  
-  const unixTimeStamp10min = getUnixTimestampFromLocal(details.slotDate.toISOString().split('T')[0], formattedTime10min);
-  const whatsappApiUrl10min = `${baseUrl}${scheduledMessages[2].url}${unixTimeStamp10min}&dvariables=${scheduledMessages[2].dvariables}`;
-  await fetch(whatsappApiUrl10min, { method: 'GET' }).then((res) => {
-    console.log(res.status)
-
-  });
-
-
-  const unixTimeStampLive = getUnixTimestampFromLocal(details.slotDate.toISOString().split('T')[0], details.slotStartTime);
-  const whatsappApiUrlLive = `${baseUrl}${scheduledMessages[3].url}${unixTimeStampLive}&dvariables=${scheduledMessages[3].dvariables}`;
-  await fetch(whatsappApiUrlLive, { method: 'GET' }).then((res) => {
-    console.log(res.status)
-  });
-
-  // Get hours and minutes from slot time
-  const [hours5, minutes5] = details.slotStartTime.split(':').map(Number);
-  
-  // Calculate time 5 minutes after slot time
-  const totalMinutes5 = hours5 * 60 + minutes5;
-  const newTotalMinutes5 = totalMinutes5 + 5;
-  const newHours5 = Math.floor(newTotalMinutes5 / 60);
-  const newMinutes5 = newTotalMinutes5 % 60;
-  
-  // Format as HH:MM
-  const formattedTime5min = `${newHours5.toString().padStart(2, '0')}:${newMinutes5.toString().padStart(2, '0')}`;
-  
-  const unixTimeStamp5min = getUnixTimestampFromLocal(details.slotDate.toISOString().split('T')[0], formattedTime5min);
-  const whatsappApiUrl5min = `${baseUrl}${scheduledMessages[4].url}${unixTimeStamp5min}&dvariables=${scheduledMessages[4].dvariables}`;
-  await fetch(whatsappApiUrl5min, { method: 'GET' }).then((res) => {
-    console.log(res.status)
-  });
-}
-
-
-const SendScheduledEmails = async (details) => {
-    const meetingTime = convertToISTDateTime(details.slotDate, details.slotStartTime);
-    const meetingDateTime = new Date(meetingTime);
-
-    const scheduledMessages = [
-        {
-            timing: new Date(meetingDateTime.getTime() - (24 * 60 * 60 * 1000)), // 24 hours before
-            subject: "24 Hour Reminder: Your Consultation Tomorrow",
-            template: "24hr_reminder"
-        },
-        {
-            timing: new Date(meetingDateTime.getTime() - (30 * 60 * 1000)), // 30 minutes before
-            subject: "30 Minutes Until Your Consultation",
-            template: "30min_reminder"
-        },
-        {
-            timing: new Date(meetingDateTime.getTime() - (10 * 60 * 1000)), // 10 minutes before
-            subject: "10 Minutes Until Your Consultation",
-            template: "10min_reminder"
-        },
-        {
-            timing: meetingDateTime, // At meeting time
-            subject: "Your Consultation is Starting Now",
-            template: "live_now"
-        },
-        {
-            timing: new Date(meetingDateTime.getTime() + (5 * 60 * 1000)), // 5 minutes after
-            subject: "Consultation Follow-up",
-            template: "after_start_reminder"
-        }
-    ];
-
-    // Here you can implement the email scheduling logic using the scheduledMessages array
-    // Each object contains the timing and relevant template information
-    const brevoEmailApi = 'https://api.brevo.com/v3/smtp/email'
-
-    for (const message of scheduledMessages) {
-        try {
-            const payload = {
-                to: [{
-                    email: details.email,
-                    name: details.name
-                }],
-                templateId: 2,
-                params: {
-                    subject: message.subject,
-                    date: message.timing.toISOString().split('T')[0],
-                    time: message.timing.toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: 'numeric',
-                        hour12: true
-                    }),
-                    service: details.service,
-                    zoomLink: details.meetingLink,
-                    reschedule: message.template === 'after_start_reminder' ? 
-                        "If you wish to reschedule, click here: https://calendly.com/ineffadesign/30min" : 
-                        undefined
-                },
-                scheduledAt: message.timing.toISOString()
-            };
-
-            const response = await fetch(brevoEmailApi, {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'api-key': process.env.BREVO_API_KEY,
-                    'content-type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            } else {
-                console.log(response);
-            }
-
-            const data = await response.json();
-            console.log(`Scheduled ${message.template} email successfully:`, data);
-        } catch (error) {
-            console.error(`Failed to schedule ${message.template} email:`, error);
-        }
-    }
-}
-
-
-const convertToISTDateTime = (slotDate, slotStartTime) => {
-  // Parse the date and time
-  const [hours, minutes] = slotStartTime.split(':').map(Number);
-  
-  // Create a new date object from slotDate
-  const date = new Date(slotDate);
-  
-  // Set the hours and minutes
-  date.setHours(hours, minutes, 0, 0);
-  
-  // Add 5 hours and 30 minutes for IST offset
-  date.setHours(date.getHours() + 5);
-  date.setMinutes(date.getMinutes() + 30);
-  
-  // Format to ISO string with IST offset
-  return date.toISOString().replace('Z', '+05:30');
-}
 
 

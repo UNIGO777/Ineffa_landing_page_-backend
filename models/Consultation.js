@@ -48,6 +48,10 @@ const consultationSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    WhatsappReminderIds: {
+        type: [String],
+        default: []
+    },
     createdAt: {
         type: Date,
         default: Date.now

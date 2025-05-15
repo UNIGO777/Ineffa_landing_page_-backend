@@ -24,6 +24,7 @@
     "mongodb": "^6.16.0",
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
+    "node-cron": "^4.0.5",
     "nodemailer": "^6.10.1",
     "otp-generator": "^4.0.1",
     "razorpay": "^2.9.6",

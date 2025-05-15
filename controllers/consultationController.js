@@ -74,7 +74,7 @@ export const initiateConsultationPayment = catchAsync(
   async (req, res, next) => {
     const { consultationId } = req.body;
 
-    const amount = 99;
+    const amount = 1;
     
     if (!consultationId || !amount) {
       return next(new AppError('Please provide consultation ID and amount', 400));
