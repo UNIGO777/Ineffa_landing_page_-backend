@@ -149,7 +149,8 @@ export const verifyPayment = catchAsync(async (req, res, next) => {
           customerName: consultation.name,
           customerEmail: consultation.email, 
           customerMobile: consultation.phone,
-          customerComment: consultation.message
+          customerComment: consultation.message,
+          zoomLink: consultation.meetingLink,
         }, {
           headers: {
             'Authorization': process.env.CRM_API_KEY,

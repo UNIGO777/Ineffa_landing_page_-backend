@@ -82,6 +82,7 @@ const SendScheduledWhatsappMessages = async (details) => {
     try {
       const res = await fetch(url, { method: 'GET' });
       const data = await res.json();
+      
       // console.log(`Response for ${msg.delayLabel}:`, data);
       if (data.requestid) {
         requestIds.push({ delay: msg.delayLabel, requestid: data.requestid });

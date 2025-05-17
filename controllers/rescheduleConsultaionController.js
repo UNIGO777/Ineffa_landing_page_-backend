@@ -29,7 +29,7 @@ export const verifyPhoneAndCheckConsultations = catchAsync(async (req, res, next
   }
 
   const now = new Date();
-  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const eightHoursFromNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
   const consultations = await Consultation.find({
     phone,
@@ -46,11 +46,11 @@ export const verifyPhoneAndCheckConsultations = catchAsync(async (req, res, next
     const [hours, minutes] = consultation.slotStartTime.split(':').map(Number);
     slotDateTime.setHours(hours, minutes, 0, 0);
 
-    return slotDateTime > twentyFourHoursFromNow;
+    return slotDateTime > eightHoursFromNow;
   });
 
   if (reschedulableConsultations.length === 0) {
-    return next(new AppError('No consultations available for rescheduling. Consultations must be more than 24 hours away.', 400));
+    return next(new AppError('No consultations available for rescheduling. Consultations must be more than 8 hours away.', 400));
   }
 
   const userEmail = consultations[0].email;
@@ -112,8 +112,8 @@ export const verifyOTPAndGetConsultations = catchAsync(async (req, res, next) =>
   // Get current date and time
   const now = new Date();
 
-  // Calculate 24 hours from now for slot filtering
-  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  // Calculate 8 hours from now for slot filtering
+  const eightHoursFromNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
   // Find consultations for this phone number that can be rescheduled
   const consultations = await Consultation.find({
@@ -122,13 +122,13 @@ export const verifyOTPAndGetConsultations = catchAsync(async (req, res, next) =>
     paymentStatus: 'completed'
   });
 
-  // Filter consultations that are more than 24 hours away
+  // Filter consultations that are more than 8 hours away
   const reschedulableConsultations = consultations.filter(consultation => {
     const slotDateTime = new Date(consultation.slotDate);
     const [hours, minutes] = consultation.slotStartTime.split(':').map(Number);
     slotDateTime.setHours(hours, minutes, 0, 0);
 
-    return slotDateTime > twentyFourHoursFromNow;
+    return slotDateTime > eightHoursFromNow;
   });
 
   // Format consultations for frontend
@@ -174,12 +174,12 @@ export const getAvailableSlotsForReschedule = catchAsync(async (req, res, next) 
   // Get current date and time
   const now = new Date();
 
-  // Calculate 24 hours from now for slot filtering
-  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  // Calculate 8 hours from now for slot filtering
+  const eightHoursFromNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
-  // Check if selected date is at least 24 hours in the future
-  if (selectedDate < twentyFourHoursFromNow) {
-    return next(new AppError('Please select a date that is at least 24 hours in the future', 400));
+  // Check if selected date is at least 8 hours in the future
+  if (selectedDate < eightHoursFromNow) {
+    return next(new AppError('Please select a date that is at least 8 hours in the future', 400));
   }
 
   // Generate all possible time slots for the selected date
@@ -242,22 +242,22 @@ export const rescheduleConsultation = catchAsync(async (req, res, next) => {
   }
 
   const now = new Date();
-  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const eightHoursFromNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
   const currentSlotDateTime = new Date(consultation.slotDate);
   const [currentHours, currentMinutes] = consultation.slotStartTime.split(':').map(Number);
   currentSlotDateTime.setHours(currentHours, currentMinutes, 0, 0);
 
-  if (currentSlotDateTime <= twentyFourHoursFromNow) {
-    return next(new AppError('This consultation cannot be rescheduled as it is within 24 hours', 400));
+  if (currentSlotDateTime <= eightHoursFromNow) {
+    return next(new AppError('This consultation cannot be rescheduled as it is within 8 hours', 400));
   }
 
   const newSlotDateTime = new Date(newDate);
   const [newHours, newMinutes] = newStartTime.split(':').map(Number);
   newSlotDateTime.setHours(newHours, newMinutes, 0, 0);
 
-  if (newSlotDateTime <= twentyFourHoursFromNow) {
-    return next(new AppError('New slot must be more than 24 hours in the future', 400));
+  if (newSlotDateTime <= eightHoursFromNow) {
+    return next(new AppError('New slot must be more than 8 hours in the future', 400));
   }
 
   const existingConsultations = await Consultation.find({
