@@ -1,7 +1,7 @@
 import Consultation from '../models/Consultation.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { AppError } from '../utils/appError.js';
-import { sendOtpEmail, sendRescheduleConfirmation } from '../config/nodemailer.js';
+import { sendInternalNotification, sendOtpEmail, sendRescheduleConfirmation } from '../config/nodemailer.js';
 import { businessConfig } from '../config/businessConfig.js';
 import Notification from '../models/Notification.js';
 import dotenv from 'dotenv';
@@ -327,6 +327,21 @@ export const rescheduleConsultation = catchAsync(async (req, res, next) => {
         zoomLink: consultation.meetingLink,
         consultantName: consultation.consultantName
       };
+
+      const internalEmailResult = await sendInternalNotification(
+        'New Consultation Booking', 
+        `<h2>New Consultation Booking Details</h2>
+         <p>Client Name: ${bookingDetails.name}</p>
+         <p>Client Email: ${consultation.email}</p>
+         <p>Service: ${bookingDetails.service}</p>
+         <p>Date: ${bookingDetails.date}</p>
+         <p>Time: ${bookingDetails.time}</p>
+         <p>Meeting Link: ${bookingDetails.zoomLink}</p>`
+      );
+
+      if (!internalEmailResult.success) {
+        console.error('Error sending confirmation email:', emailResult.error);
+      }
 
       const emailResult = await sendRescheduleConfirmation(consultation.email, bookingDetails);
       if (!emailResult.success) {

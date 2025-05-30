@@ -69,7 +69,7 @@ mongoose.connect(MONGO_URI)
           reminders: {
             $elemMatch: {
               sent: false,
-              scheduledTime: { $lte: istTime } // Only get reminders scheduled for now or earlier
+              scheduledTime: { $lte: istTime }
             }
           }
         }).populate('consultationId');
@@ -88,7 +88,6 @@ mongoose.connect(MONGO_URI)
             console.log(`Processing reminders for consultation: ${consultation.name} (${consultation._id})`);
             let remindersSent = 0;
             
-            // Sort reminders by scheduledTime to process them in order
             const sortedReminders = reminderDoc.reminders.sort((a, b) => 
               new Date(a.scheduledTime) - new Date(b.scheduledTime)
             );
@@ -96,7 +95,6 @@ mongoose.connect(MONGO_URI)
             for (const reminder of sortedReminders) {
               const scheduledTime = new Date(reminder.scheduledTime);
               
-              // Only process reminders that are due
               if (!reminder.sent && scheduledTime <= istTime) {
                 console.log(`Reminder: ${reminder.subject}, Scheduled: ${scheduledTime.toISOString()}, Sent: ${reminder.sent}`);
                 

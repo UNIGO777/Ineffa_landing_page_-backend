@@ -14,6 +14,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+
 // Function to send OTP email
 export const sendOtpEmail = async (email, otp) => {
   const mailOptions = {
@@ -44,6 +45,33 @@ export const sendOtpEmail = async (email, otp) => {
   }
 };
 
+// Internal notification emails
+const notificationEmails = [
+  'naman13399@gmail.com',
+  'care@ineffa.design', 
+  'sales@ineffa.design',
+  'marketing@ineffa.design',
+  'anant@ineffa.design'
+];
+
+
+// Function to send internal notification
+export const  sendInternalNotification = async (subject, content) => {
+  const mailOptions = {
+    from: `"Ineffa System" <${process.env.EMAIL_USER}>`,
+    to: notificationEmails,
+    subject: subject,
+    html: content
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending internal notification:', error);
+    return { success: false, error: error.message };
+  }
+};
 
 // Function to send consultation booking confirmation email
 export const sendConsultationConfirmation = async (email, bookingDetails) => {
@@ -97,13 +125,26 @@ export const sendConsultationConfirmation = async (email, bookingDetails) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
+    
+    // Send internal notification
+    const internalContent = `
+      <div style="font-family: Arial, sans-serif;">
+        <h3>New Consultation Booking</h3>
+        <p><strong>Client:</strong> ${bookingDetails.name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Date:</strong> ${bookingDetails.date}</p>
+        <p><strong>Time:</strong> ${bookingDetails.time}</p>
+        <p><strong>Service:</strong> ${bookingDetails.service}</p>
+      </div>
+    `;
+    await sendInternalNotification('New Consultation Booking Alert', internalContent);
+    
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending consultation confirmation email:', error);
     return { success: false, error: error.message };
   }
 };
-
 
 // Function to send reschedule confirmation email
 export const sendRescheduleConfirmation = async (email, bookingDetails) => {
@@ -157,6 +198,20 @@ export const sendRescheduleConfirmation = async (email, bookingDetails) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
+    
+    // Send internal notification
+    const internalContent = `
+      <div style="font-family: Arial, sans-serif;">
+        <h3>Consultation Rescheduled</h3>
+        <p><strong>Client:</strong> ${bookingDetails.name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>New Date:</strong> ${bookingDetails.date}</p>
+        <p><strong>New Time:</strong> ${bookingDetails.time}</p>
+        <p><strong>Service:</strong> ${bookingDetails.service}</p>
+      </div>
+    `;
+    await sendInternalNotification('Consultation Reschedule Alert', internalContent);
+    
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending reschedule confirmation email:', error);
@@ -164,13 +219,8 @@ export const sendRescheduleConfirmation = async (email, bookingDetails) => {
   }
 };
 
-
-
-
-
 // Function to send reminder emails for consultations
 export const sendReminderEmail = async (email, reminderDetails) => {
-  console.log(reminderDetails.meetingLink, "nodemailer");
   const mailOptions = {
     from: `"Ineffa Support" <${process.env.EMAIL_USER}>`,
     to: email,
@@ -207,8 +257,6 @@ export const sendReminderEmail = async (email, reminderDetails) => {
                     Reschedule Appointment
           </a>
         </div>
-
-
         
         <p>If you need to cancel your consultation, please contact us at least 24 hours before the scheduled time.</p>
         
@@ -221,6 +269,20 @@ export const sendReminderEmail = async (email, reminderDetails) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
+    
+    // Send internal notification
+    const internalContent = `
+      <div style="font-family: Arial, sans-serif;">
+        <h3>Consultation Reminder Sent</h3>
+        <p><strong>Client:</strong> ${reminderDetails.name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Date:</strong> ${reminderDetails.date}</p>
+        <p><strong>Time:</strong> ${reminderDetails.time}</p>
+        <p><strong>Service:</strong> ${reminderDetails.service}</p>
+      </div>
+    `;
+    await sendInternalNotification('Consultation Reminder Alert', internalContent);
+    
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending reminder email:', error);

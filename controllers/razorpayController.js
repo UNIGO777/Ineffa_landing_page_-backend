@@ -5,7 +5,7 @@ import Notification from '../models/Notification.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { AppError } from '../utils/appError.js';
 import crypto from 'crypto';
-import { sendConsultationConfirmation } from '../config/nodemailer.js';
+import { sendConsultationConfirmation, sendInternalNotification } from '../config/nodemailer.js';
 import getUnixTimestampFromLocal from '../GenerateTimeStamp.js';
 import axios from 'axios';
 import SendScheduledEmails from '../GenrateReminderEmail.js';
@@ -180,6 +180,20 @@ export const verifyPayment = catchAsync(async (req, res, next) => {
       };
 
       const emailResult = await sendConsultationConfirmation(consultation.email, bookingDetails);
+      const internalEmailResult = await sendInternalNotification(
+        'New Consultation Booking', 
+        `<h2>New Consultation Booking Details</h2>
+         <p>Client Name: ${bookingDetails.name}</p>
+         <p>Client Email: ${consultation.email}</p>
+         <p>Service: ${bookingDetails.service}</p>
+         <p>Date: ${bookingDetails.date}</p>
+         <p>Time: ${bookingDetails.time}</p>
+         <p>Meeting Link: ${bookingDetails.zoomLink}</p>`
+      );
+
+      if (!internalEmailResult.success) {
+        console.error('Error sending confirmation email:', emailResult.error);
+      }
       if (!emailResult.success) {
         console.error('Error sending confirmation email:', emailResult.error);
       }
