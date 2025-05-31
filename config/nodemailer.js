@@ -47,7 +47,6 @@ export const sendOtpEmail = async (email, otp) => {
 
 // Internal notification emails
 const notificationEmails = [
-  'naman13399@gmail.com',
   'care@ineffa.design', 
   'sales@ineffa.design',
   'marketing@ineffa.design',
